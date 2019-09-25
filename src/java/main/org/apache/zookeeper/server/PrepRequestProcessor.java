@@ -478,6 +478,12 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 // queues up this operation without being the session owner.
                 // this request is the last of the session so it should be ok
                 //zks.sessionTracker.checkSession(request.sessionId, request.getOwner());
+
+                /**
+                 *
+                 * 将当前 seesion(连接) 所绑定的所有临时节点找出来
+                 *
+                 */
                 HashSet<String> es = zks.getZKDatabase()
                         .getEphemerals(request.sessionId);
                 synchronized (zks.outstandingChanges) {
@@ -490,6 +496,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                         }
                     }
                     for (String path2Delete : es) {
+                        // outstandingChanges 最后一个 处理器 会用到 会在哪里 把他们删除
                         addChangeRecord(new ChangeRecord(request.hdr.getZxid(),
                                 path2Delete, null, 0, null));
                     }

@@ -1087,6 +1087,11 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         int opCode = hdr.getType();
         long sessionId = hdr.getClientId();
         rc = getZKDatabase().processTxn(hdr, txn);
+
+        /**
+         * 开启和 关闭连接的操作
+         *
+         */
         if (opCode == OpCode.createSession) {
             if (txn instanceof CreateSessionTxn) {
                 CreateSessionTxn cst = (CreateSessionTxn) txn;

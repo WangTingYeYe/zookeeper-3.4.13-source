@@ -860,7 +860,7 @@ public class ClientCnxn {
                             + Long.toHexString(sessionId) + ", packet:: " + packet);
                 }
             } finally {
-                // 处理packet
+                // 处理packet 唤醒线程
                 finishPacket(packet);
             }
         }
@@ -1420,6 +1420,7 @@ public class ClientCnxn {
             RequestHeader h = new RequestHeader();
             h.setType(ZooDefs.OpCode.closeSession);
 
+            // 提交了一个closeSession 操作
             submitRequest(h, null, null, null);
         } catch (InterruptedException e) {
             // ignore, close the send/event threads

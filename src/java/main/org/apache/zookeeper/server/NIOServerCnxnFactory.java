@@ -242,7 +242,7 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
                             SelectionKey sk = sc.register(selector,
                                     SelectionKey.OP_READ);
                             NIOServerCnxn cnxn = createConnection(sc, sk);
-                            // 将NIOServerCnxn 绑定给当前 ServerSocketChannel
+                            // 将NIOServerCnxn 绑定给当前 SocketChannel
                             sk.attach(cnxn);
                             addCnxn(cnxn);
                         }

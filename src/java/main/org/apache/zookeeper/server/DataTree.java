@@ -506,6 +506,8 @@ public class DataTree {
         }
         Set<Watcher> processed = dataWatches.triggerWatch(path,
                 EventType.NodeDeleted);
+
+        // 发布 节点删除、子节点改变 事件
         childWatches.triggerWatch(path, EventType.NodeDeleted, processed);
         childWatches.triggerWatch(parentName.equals("") ? "/" : parentName,
                 EventType.NodeChildrenChanged);
@@ -891,6 +893,7 @@ public class DataTree {
         if (list != null) {
             for (String path : list) {
                 try {
+                    // 遍历删除 当前session绑定的临时节点
                     deleteNode(path, zxid);
                     if (LOG.isDebugEnabled()) {
                         LOG

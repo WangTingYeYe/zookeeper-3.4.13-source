@@ -663,6 +663,7 @@ public class ZooKeeperMain {
 
         if (cmd.equals("quit")) {
             System.out.println("Quitting...");
+            // closeSession 操作
             zk.close();
             System.exit(0);
         } else if (cmd.equals("redo") && args.length >= 2) {

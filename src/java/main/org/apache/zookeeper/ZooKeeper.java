@@ -687,6 +687,7 @@ public class ZooKeeper {
         }
 
         try {
+            //---
             cnxn.close();
         } catch (IOException e) {
             if (LOG.isDebugEnabled()) {
@@ -1207,6 +1208,9 @@ public class ZooKeeper {
         PathUtils.validatePath(clientPath);
 
         // the watch contains the un-chroot path
+         /**
+          * 这里将 watcher 绑定到客户端的 注册器上
+          */
         WatchRegistration wcb = null;
         if (watcher != null) {
             wcb = new DataWatchRegistration(watcher, clientPath);
@@ -1218,8 +1222,14 @@ public class ZooKeeper {
         h.setType(ZooDefs.OpCode.getData);
         GetDataRequest request = new GetDataRequest();
         request.setPath(serverPath);
+
+        //这里比较重要哦
         request.setWatch(watcher != null);
         GetDataResponse response = new GetDataResponse();
+         /**
+          * 为什么wcb回传给服务端？
+          *
+          */
         ReplyHeader r = cnxn.submitRequest(h, request, response, wcb);
         if (r.getErr() != 0) {
             throw KeeperException.create(KeeperException.Code.get(r.getErr()),

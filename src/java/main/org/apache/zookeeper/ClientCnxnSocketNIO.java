@@ -75,6 +75,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                                 + Long.toHexString(sessionId)
                                 + ", likely server has closed socket");
             }
+            // 没有剩余的的数据，即读完了
             if (!incomingBuffer.hasRemaining()) {
                 incomingBuffer.flip();
                 if (incomingBuffer == lenBuffer) {
@@ -88,6 +89,10 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                             cnxn.sendThread.clientTunneledAuthenticationInProgress()) != null) {
                         // Since SASL authentication has completed (if client is configured to do so),
                         // outgoing packets waiting in the outgoingQueue can now be sent.
+
+                        /**
+                         * 由于SASL身份验证已经完成(如果客户端被配置为完成身份验证)，在outgoingQueue中等待发送的数据包现在可以发送了
+                         */
                         enableWrite(); //允许写，因为有要发送的packet
                     }
                     lenBuffer.clear();

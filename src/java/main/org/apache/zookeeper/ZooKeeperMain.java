@@ -842,6 +842,7 @@ public class ZooKeeperMain {
             path = args[1];
             zk.sync(path, new AsyncCallback.VoidCallback() { public void processResult(int rc, String path, Object ctx) { System.out.println("Sync returned " + rc); } }, null );
         } else if (cmd.equals("addauth") && args.length >=2 ) {
+            // 相当于给当前 连接 添加一个 身份（账号：密码），可以添加多个。
             byte[] b = null;
             if (args.length >= 3)
                 b = args[2].getBytes();

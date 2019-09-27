@@ -137,6 +137,7 @@ public class QuorumPeerMain {
           cnxnFactory.configure(config.getClientPortAddress(),
                                 config.getMaxClientCnxns());
 
+          //该类即代表了 集群中的某一台服务器(也是一个Runable 即 run方法)
           quorumPeer = getQuorumPeer();
 
           quorumPeer.setQuorumPeers(config.getServers());

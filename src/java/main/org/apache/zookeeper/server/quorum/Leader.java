@@ -390,14 +390,23 @@ public class Leader {
             
             leaderStateSummary = new StateSummary(self.getCurrentEpoch(), zk.getLastProcessedZxid());
 
-            // Start thread that waits for connection requests from 
-            // new followers.
+            // Start thread that waits for connection requests from  new followers.
+            // 这里启动 一个线程去 链接  新的 follower 。当链接到新的 follower 时，又会新建一个LearnerHandler 线程去处理后续的事情。
             cnxAcceptor = new LearnerCnxAcceptor();
             cnxAcceptor.start();
             
             readyToStart = true;
+            // leader 读取 epoch 如果没有过半得出，则会被wait 。会有learneHandler 唤醒它的（机智啊）
             long epoch = getEpochToPropose(self.getId(), self.getAcceptedEpoch());
-            
+
+            /**
+             *
+             * 类似于RDBMS中的事务ID，用于标识一次更新操作的Proposal ID。为了保证顺序性，该zkid必须单调递增。
+             * 因此ZooKeeper使用一个64位的数来表示，高32位是Leader的epoch，从1开始，每次选出新的Leader，epoch加一。
+             * 低32位为该epoch内的序号，每次epoch变化，都将低32位的序号重置。这样保证了zkid的全局递增性。
+             *
+             * 这里得到 一个新leader 的起始事务id 的前32位。
+             */
             zk.setZxid(ZxidUtils.makeZxid(epoch, 0));
             
             synchronized(this){
@@ -412,7 +421,8 @@ public class Leader {
                 LOG.info("NEWLEADER proposal has Zxid of "
                         + Long.toHexString(newLeaderProposal.packet.getZxid()));
             }
-            
+
+            // leader 将自己的以前的最大事务id发送出去。让flower们 去确认。 当收到 一半的人同意时。就准备让大家开始 同步leader的数据了
             waitForEpochAck(self.getId(), leaderStateSummary);
             self.setCurrentEpoch(epoch);
 
@@ -874,6 +884,7 @@ public class Leader {
             if (!waitingForNewEpoch) {
                 return epoch;
             }
+            // 确认 zxid 核心代码  找到
             if (lastAcceptedEpoch >= epoch) {
                 epoch = lastAcceptedEpoch+1;
             }
@@ -881,12 +892,15 @@ public class Leader {
                 connectingFollowers.add(sid);
             }
             QuorumVerifier verifier = self.getQuorumVerifier();
+
+            // 如果 过半 则唤醒所有被锁的。leader 以及 参与确认的 learnerHander（对应的follower）。
             if (connectingFollowers.contains(self.getId()) && 
                                             verifier.containsQuorum(connectingFollowers)) {
                 waitingForNewEpoch = false;
                 self.setAcceptedEpoch(epoch);
                 connectingFollowers.notifyAll();
             } else {
+                // 当 leader 和 learnerHander（对应的follower） 尝试获取 epoch，但还没过半时。就在这里等待别人唤醒自己。
                 long start = Time.currentElapsedTime();
                 long cur = start;
                 long end = start + self.getInitLimit()*self.getTickTime();
@@ -905,7 +919,23 @@ public class Leader {
     protected Set<Long> electingFollowers = new HashSet<Long>();
     // VisibleForTesting
     protected boolean electionFinished = false;
+
+    /**
+     *
+     * 服务端 ACK 过半 确认。
+     * leader、 leader的LearnerHandler（与follower通讯） 线程。都会接受到follower的ACK。
+     *
+     * 当每次 接受到ACK的时候来调用本方法。本方法会记录下所有的收到的ack。并调用本方法
+     * 1、如果过半。就通过。并且唤醒所有被wait的线程
+     * 2、如果没有过半则当前wait。等待某个线程收到ack时，唤醒它
+     *
+     * @param id
+     * @param ss
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public void waitForEpochAck(long id, StateSummary ss) throws IOException, InterruptedException {
+        //electingFollowers 所有选举的 Follower
         synchronized(electingFollowers) {
             if (electionFinished) {
                 return;
@@ -922,6 +952,9 @@ public class Leader {
                     electingFollowers.add(id);
                 }
             }
+
+            // 谁来 调用这个方法的时候 如果 没有过半，谁就在下面 wait
+            // 直到 有某一个线程调用的时候 发现 满足过半。将所有线程唤醒
             QuorumVerifier verifier = self.getQuorumVerifier();
             if (electingFollowers.contains(self.getId()) && verifier.containsQuorum(electingFollowers)) {
                 electionFinished = true;
@@ -1009,7 +1042,7 @@ public class Leader {
                 return;
             }
 
-            // leander的serverId
+            // leander（参与者，除了observer）的serverId
             if (isParticipant(sid)) {
                 newLeaderProposal.ackSet.add(sid);
             }

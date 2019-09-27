@@ -641,9 +641,11 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     
     @Override
     public synchronized void start() {
-        // 加载数据
+        // 加载数据 (其中 会找到 zxid的前32位)
         loadDataBase();
         // 开启读取数据线程
+        // 思考：这里启动了，不是跟单机模式一样，可以读写数据了吗？不是说选举没完成，拒绝服务的吗？
+        // 答案：这里虽然启动了读写线程，但是 处理链还没有设置。所以读写的时候 判断到了处理链为null。就拒绝服务了。等到选举完了。leader和follower 各自会设置 不同的处理链。
         cnxnFactory.start();
         // 进行领导者选举，确定服务器的角色，再针对不同的服务器角色进行初始化
         startLeaderElection();
@@ -888,6 +890,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 cnxnFactory.getLocalAddress());
 
         LOG.debug("Starting quorum peer");
+        //================================================================= 暂时忽略
         try {
             jmxQuorumBean = new QuorumBean(this);
             MBeanRegistry.getInstance().register(jmxQuorumBean, null);
@@ -917,6 +920,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             LOG.warn("Failed to register with JMX", e);
             jmxQuorumBean = null;
         }
+        //================================================================
 
         try {
             /*

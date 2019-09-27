@@ -26,9 +26,21 @@ public class ZxidUtils {
 		return zxid & 0xffffffffL;
 	}
 	static public long makeZxid(long epoch, long counter) {
+
+		/**
+		 * 111 << 3
+		 * 111000
+		 * |
+		 * 000000
+		 *
+		 * 111000
+		 * 所以 该方法得到的 是前32位（即当前leader这一届的固定值）。后32为从0开始
+		 */
 		return (epoch << 32L) | (counter & 0xffffffffL);
 	}
 	static public String zxidToString(long zxid) {
 		return Long.toHexString(zxid);
 	}
+
+
 }

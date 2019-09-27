@@ -133,6 +133,7 @@ public class Learner {
     void writePacket(QuorumPacket pp, boolean flush) throws IOException {
         synchronized (leaderOs) {
             if (pp != null) {
+                // leaderOs 就是一个与leader 建立好的链接
                 leaderOs.writeRecord(pp, "packet");
             }
             if (flush) {
@@ -276,8 +277,10 @@ public class Learner {
         BinaryOutputArchive boa = BinaryOutputArchive.getArchive(bsid);
         boa.writeRecord(li, "LearnerInfo");
         qp.setData(bsid.toByteArray());
-        
+
+        // 1、将 sid发送给 leader
         writePacket(qp, true);
+        // 4、接受 LEADERINFO
         readPacket(qp);        
         final long newEpoch = ZxidUtils.getEpochFromZxid(qp.getZxid());
 		if (qp.getType() == Leader.LEADERINFO) {
@@ -297,6 +300,7 @@ public class Learner {
         	} else {
         		throw new IOException("Leaders epoch, " + newEpoch + " is less than accepted epoch, " + self.getAcceptedEpoch());
         	}
+        	// 5、发送ACK
         	QuorumPacket ackNewEpoch = new QuorumPacket(Leader.ACKEPOCH, lastLoggedZxid, epochBytes, null);
         	writePacket(ackNewEpoch, true);
             return ZxidUtils.makeZxid(newEpoch, 0);

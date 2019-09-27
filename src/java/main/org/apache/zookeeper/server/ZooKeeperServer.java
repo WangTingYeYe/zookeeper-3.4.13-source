@@ -415,6 +415,28 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         startSessionTracker();
         // 这里比较重要，这里设置请求处理器，包括请求前置处理器，和请求后置处理器
         // 注意，集群模式下，learner服务端都对调用这个方法，但是比如FollowerZookeeperServer和ObserverZooKeeperServer都会重写这个方法
+
+        //  leader: 设置处理链、开启三个线程
+        //  PrepRequestProcessor.next = ProposalRequestProcessor.next=CommitProcessor.next=ToBeAppliedRequestProcessor.next=FinalRequestProcessor
+        //  PrepRequestProcessor.run
+        //  CommitProcessor.run
+        //  SynProcessorRequset.run
+
+
+        //  follower: 设置处理链、开启三个线程
+        //  FollowerRequestProcessor.next = CommitProcessor.next = FinalRequestProcessor
+        //  SyncRequestProcessor.next = SendAckRequestProcessor
+        //  FollowerRequestProcessor.run
+        //  CommitProcessor.run
+        //  SyncRequestProcessor.run
+
+        //  observer:设置处理链、根据条件开启线程
+        //  ObserverRequestProcessor.next = CommitProcessor.next= FinalRequestProcessor
+        //  ObserverRequestProcessor.run
+        //  CommitProcessor.run
+        //   if (syncRequestProcessorEnabled) {
+        //         SyncRequestProcessor.run
+        //        }
         setupRequestProcessors();
 
         registerJMX();
@@ -735,6 +757,8 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
                     // processor it should wait for setting up the request
                     // processor chain. The state will be updated to RUNNING
                     // after the setup.
+                    // 如果服务器  还没又完成 初始化。则会在这里循环等待
+                    // 1、选举 2、数据同步
                     while (state == State.INITIAL) {
                         wait(1000);
                     }

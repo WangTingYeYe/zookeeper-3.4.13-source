@@ -137,7 +137,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                                 && p.requestHeader.getType() != OpCode.ping
                                 && p.requestHeader.getType() != OpCode.auth) {
                             synchronized (pendingQueue) {
-                                // 加入待回复的队列
+                                // ****** 加入待回复的队列
                                 pendingQueue.add(p);
                             }
                         }
@@ -391,7 +391,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
         updateNow();
         for (SelectionKey k : selected) {
             SocketChannel sc = ((SocketChannel) k.channel());
-            // 如果是连接就绪，调用sendThread连接操作
+            // 1、如果是连接就绪，调用sendThread连接操作
             if ((k.readyOps() & SelectionKey.OP_CONNECT) != 0) {
                 // 如果就绪的是connect事件，这个出现在registerAndConnect函数没有立即连接成功
                 if (sc.finishConnect()) {
@@ -399,8 +399,8 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                     sendThread.primeConnection();
                 }
             } else if ((k.readyOps() & (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) != 0) {
-                // 如果就绪的是读或者写事件
-                // 若读写就绪，调用doIO函数
+            // 2、如果就绪的是读或者写事件
+            // 若读写就绪，调用doIO函数
                 doIO(pendingQueue, outgoingQueue, cnxn);
             }
         }

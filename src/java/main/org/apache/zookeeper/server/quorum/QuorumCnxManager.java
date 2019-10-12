@@ -204,7 +204,8 @@ public class QuorumCnxManager {
         initializeAuth(mySid, authServer, authLearner, quorumCnxnThreadsSize,
                 quorumSaslAuthEnabled);
 
-        // Starts listener thread that waits for connection requests 
+        // Starts listener thread that waits for connection requests
+        // 通讯层 重要的 逻辑都在这里
         listener = new Listener();
     }
 
@@ -501,6 +502,8 @@ public class QuorumCnxManager {
 
             // Otherwise start worker threads to receive data.
         } else {
+
+            // 创建两个 线程  这个两个线程就负责 投票服务器之间发送和接受数据使用
             SendWorker sw = new SendWorker(sock, sid);
             RecvWorker rw = new RecvWorker(sock, din, sid, sw);
             sw.setRecv(rw);
@@ -758,7 +761,7 @@ public class QuorumCnxManager {
                             .electionAddr.toString());
                     ss.bind(addr);
                     while (!shutdown) {
-                        Socket client = ss.accept(); //
+                        Socket client = ss.accept(); // 链接别的服务器的投票链接
                         setSockOpts(client);
                         LOG.info("Received connection request "
                                 + client.getRemoteSocketAddress());
@@ -912,6 +915,8 @@ public class QuorumCnxManager {
         @Override
         public void run() {
             threadCnt.incrementAndGet();
+
+            // 特殊逻辑处理 可以看注释解释
             try {
                 /**
                  * If there is nothing in the queue to send, then we
@@ -938,7 +943,8 @@ public class QuorumCnxManager {
                 LOG.error("Failed to send last message. Shutting down thread.", e);
                 this.finish();
             }
-            
+
+            // 正常逻辑
             try {
                 while (running && !shutdown && sock != null) {
 
@@ -947,6 +953,7 @@ public class QuorumCnxManager {
                         ArrayBlockingQueue<ByteBuffer> bq = queueSendMap
                                 .get(sid);
                         if (bq != null) {
+                            //从queueSendMap找到 对应服务器要发送的数据队列。并且从改队列去除数据
                             b = pollSendQueue(bq, 1000, TimeUnit.MILLISECONDS);
                         } else {
                             LOG.error("No queue of incoming messages for " +
@@ -954,6 +961,7 @@ public class QuorumCnxManager {
                             break;
                         }
 
+                        // 发送数据
                         if(b != null){
                             lastMessageSent.put(sid, b);
                             send(b);
@@ -1040,6 +1048,7 @@ public class QuorumCnxManager {
                     byte[] msgArray = new byte[length];
                     din.readFully(msgArray, 0, length);
                     ByteBuffer message = ByteBuffer.wrap(msgArray);
+                    //读取数据 封装成 Message对象 放进  recvQueue中。等待其他线程来处理它
                     addToRecvQueue(new Message(message.duplicate(), sid));
                 }
             } catch (Exception e) {

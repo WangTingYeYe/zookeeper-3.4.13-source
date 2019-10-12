@@ -544,6 +544,7 @@ public class FastLeaderElection implements Election {
 
         sendqueue = new LinkedBlockingQueue<ToSend>();
         recvqueue = new LinkedBlockingQueue<Notification>();
+        // 开启 WorkerSender 和 WorkerReceiver 线程
         this.messenger = new Messenger(manager);
     }
 
@@ -795,6 +796,16 @@ public class FastLeaderElection implements Election {
     }
     
     /**
+     * 发送投票方式：
+     * 1、先调用 updateProposal方法 ，将 投票信息 保存到本类的属性
+     * 2、再调用 sendNotifications方法，会从本类中 拿到属性，遍历所有投票服务器（配置文件指定的）。然后放入sendqueue
+     *
+     * WokerSender 线程会读取sendqueue 放到queueSendMap中
+     * SenderWoker 线程会读取 queueSendMap发送到对应的服务器
+     *
+     * 接收投票几乎相反。
+     *
+     *
      * Starts a new round of leader election. Whenever our QuorumPeer
      * changes its state to LOOKING, this method is invoked, and it
      * sends notifications to all other peers.
@@ -878,7 +889,7 @@ public class FastLeaderElection implements Election {
                             logicalclock.set(n.electionEpoch); // 设置自己的时钟为选票的时钟
                             recvset.clear(); // 清空自己的选票
 
-                            // 比较选票对应的服务器和本机，如果选票对应的服务器更新就更新投票为选票所对应的服务器
+                            // 比较选票对应的服务器和本机，如果选票对应的服务器更 新就更新投票为选票所对应的服务器
                             if(totalOrderPredicate(n.leader, n.zxid, n.peerEpoch,
                                     getInitId(), getInitLastLoggedZxid(), getPeerEpoch())) {
                                 updateProposal(n.leader, n.zxid, n.peerEpoch);
@@ -900,7 +911,7 @@ public class FastLeaderElection implements Election {
                             break;
                         } else if (totalOrderPredicate(n.leader, n.zxid, n.peerEpoch,
                                 proposedLeader, proposedZxid, proposedEpoch)) {
-                            // 如果时钟相等，同样比较谁的服务器更新
+                            // 如果时钟相等，同样比较谁的服务器更 新
                             updateProposal(n.leader, n.zxid, n.peerEpoch);
                             sendNotifications();
                         }

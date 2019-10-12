@@ -142,6 +142,9 @@ public class ZooKeeperServerMain {
             // 建立socketService 并监听
             cnxnFactory.configure(config.getClientPortAddress(),
                     config.getMaxClientCnxns());
+
+
+            // 重要 启动
             cnxnFactory.startup(zkServer);
             // Watch status of ZooKeeper server. It will do a graceful shutdown
             // if the server is not running or hits an internal error.

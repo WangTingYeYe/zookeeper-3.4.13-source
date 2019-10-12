@@ -127,6 +127,7 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
         setZooKeeperServer(zks);
         // 从快照 和事务日志中加载 数据
         zks.startdata();
+        // 设置 请求处理链
         zks.startup();
     }
 

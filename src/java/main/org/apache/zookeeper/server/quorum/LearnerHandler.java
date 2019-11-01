@@ -512,7 +512,7 @@ public class LearnerHandler extends ZooKeeperThread {
                 }               
 
                 LOG.info("Sending " + Leader.getPacketType(packetToSend));
-                // 发送同步数据？？？？
+                // 将leader未完成的请求 也添加进来
                 leaderLastZxid = leader.startForwarding(this, updates);
 
             } finally {
@@ -528,7 +528,7 @@ public class LearnerHandler extends ZooKeeperThread {
                  //加入发送队列
                 queuedPackets.add(newLeaderQP);
             }
-            bufferedOutput.flush(); //发送NEWLEADER消息
+            bufferedOutput.flush(); //当getVersion() < 0x10000 发送NEWLEADER消息
             //Need to set the zxidToSend to the latest zxid
             if (packetToSend == Leader.SNAP) { //如果是SNAP同步，获取zxid
                 zxidToSend = leader.zk.getZKDatabase().getDataTreeLastProcessedZxid();

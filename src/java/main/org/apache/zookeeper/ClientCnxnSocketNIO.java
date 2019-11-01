@@ -396,6 +396,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                 // 如果就绪的是connect事件，这个出现在registerAndConnect函数没有立即连接成功
                 if (sc.finishConnect()) {
                     updateLastSendAndHeard();
+                    // 初始化链接-----
                     sendThread.primeConnection();
                 }
             } else if ((k.readyOps() & (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) != 0) {

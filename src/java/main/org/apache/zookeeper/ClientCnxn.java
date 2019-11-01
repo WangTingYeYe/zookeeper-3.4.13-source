@@ -1180,7 +1180,7 @@ public class ClientCnxn {
                         to = Math.min(to, pingRwTimeout - idlePingRwServer);
                     }
 
-                    // 5、进行传输，传输的是outgoingQueue队列中的Packet
+                    // 5、进行传输，传输的是outgoingQueue队列中的Packet    Transport ：传输
                     clientCnxnSocket.doTransport(to, pendingQueue, outgoingQueue, ClientCnxn.this);
                 } catch (Throwable e) {
                     if (closing) {

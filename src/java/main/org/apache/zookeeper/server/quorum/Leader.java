@@ -387,7 +387,8 @@ public class Leader {
         try {
             self.tick.set(0);
             zk.loadData();
-            
+
+            //当前属于 第几次leader选举的结果  和最大的事务ID
             leaderStateSummary = new StateSummary(self.getCurrentEpoch(), zk.getLastProcessedZxid());
 
             // Start thread that waits for connection requests from  new followers.
@@ -406,6 +407,8 @@ public class Leader {
              * 低32位为该epoch内的序号，每次epoch变化，都将低32位的序号重置。这样保证了zkid的全局递增性。
              *
              * 这里得到 一个新leader 的起始事务id 的前32位。
+             *
+             * (epoch << 32L) | (counter & 0xffffffffL)
              */
             zk.setZxid(ZxidUtils.makeZxid(epoch, 0));
             
@@ -905,6 +908,7 @@ public class Leader {
                 long cur = start;
                 long end = start + self.getInitLimit()*self.getTickTime();
                 while(waitingForNewEpoch && cur < end) {
+                    //
                     connectingFollowers.wait(end - cur);
                     cur = Time.currentElapsedTime();
                 }
